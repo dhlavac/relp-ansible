@@ -1,0 +1,40 @@
+---
+- hosts: all
+  tasks:
+
+    - name: dnf update
+      dnf: name="*" state=latest
+
+    - name: installing rsyslog
+      dnf: name=rsyslog-relp state=latest
+
+    - name: installing selinux_python
+      dnf: name=libselinux-python state=latest
+
+    - name: stop selinux
+      shell: setenforce 0
+
+    - name: stop firewalld
+      shell: systemctl stop firewalld
+
+- hosts: server
+  vars:
+    server_port: "514"
+  tasks:
+    - name: write the rsyslog server config file
+      template: src=relp_server.j2 dest=/etc/rsyslog.d/relp_server.conf
+
+    - name: restart the rsyslog service
+      service: name=rsyslog state=restarted enabled=yes
+
+
+- hosts: client
+  vars:
+    server_ip: "127.0.0.1"
+    server_port: "514"
+  tasks:
+    - name: write the rsyslog client config file
+      template: src=relp_client.j2 dest=/etc/rsyslog.d/relp_client.conf
+
+    - name: restart the rsyslog service
+      service: name=rsyslog state=restarted enabled=yes
